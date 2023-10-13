@@ -1,6 +1,8 @@
 require('dotenv').config()
 
 const Sequelize = require('sequelize')
+
+const{CONNECTION_STRING} = process.env
 const sequelize = new Sequelize(process.env.CONNECTION_STRING)
 
 module.exports = {
@@ -15,10 +17,10 @@ module.exports = {
             );
 
             create table cities (
-                id serial primary key,
-                city_name varchar,
-                rating integer,
-                country_id integer
+                city_id serial primary key,
+                name varchar not null,
+                rating int not null,
+                country_id int not null references countries(country_id)
             );
 
             insert into countries (name)
@@ -227,32 +229,43 @@ module.exports = {
         sequelize.query(`
             SELECT * FROM countries;
         `)
-            .then(dbRes => res.status(200).send(dbRes[0]))
+        .then(dbRes => res.status(200).send(dbRes[0]))
         
     },
-    createCity: (req, res) => {
+    createCity: (req,res) => {
+        const {name, rating,countryId} = req.body
         sequelize.query(`
-        insert into cities 
-        (city_name, rating, country_id)
-        values 
-        ('${name}', ${rating} ${country_id},);
-    `)
+        insert into cities
+        (name, rating, country_id)
+        values
+        ('${name}',${rating},${countryId});
+        `)
         .then(dbRes => res.status(200).send(dbRes[0]))
     },
-    getCities: (req,res) => {
+    getCities: (req, res) => {
         sequelize.query(`
-        SELECT c.id, c.city_name, c.rating, co.country_id, co.name
-        FROM cities c
-        JOIN countries co
-        ON c.country_id = co.country_id
-    `)
-    .then(dbRes => res.status(200).send(dbRes[0]))
+        Select 
+        cities.city_id,
+        cities.name as city,
+        cities.rating,
+        countries.country_id,
+        countries.name as country
+        from countries
+        join cities
+        on countries.country_id = cities.country_id;
+        
+        `)
+        .then(dbRes => res.status(200).send(dbRes[0]))
     },
-    deleteCity: (req, res) => {
+    deleteCity: (req,res) => {
+        const {id} = req.params
+
         sequelize.query(`
-            delete from cities
-            Where id = ${+city_id}
+        delete from cities
+        where city_id = ${+id};
         `)
         .then(dbRes => res.status(200).send(dbRes[0]))
     }
+
+
 }
